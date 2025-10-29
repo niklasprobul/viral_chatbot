@@ -1,5 +1,5 @@
 # Viral Mock Chatbot
-Mock Telegram Chatbot for the Viral (2022) Call of Cthulhu Campaign
+Vibe coded mock Telegram chatbot for the Viral (2022) Call of Cthulhu Campaign
 
 ## Quick Start
 1. Initialize a conda env with the provided `requirements.txt`.
@@ -16,20 +16,20 @@ Mock Telegram Chatbot for the Viral (2022) Call of Cthulhu Campaign
 ## Controls
 The chatbot can be controled by the admint (set by admin_id) in a private chat. The control panel is generated based on the provided moods and locations. 
 ```
-[ Mood Block ] // select current mood (1 required)
-[ Location Block] // select current location (1 required)
-[ Pause / Resume ]  // pause / resume the chatbot (starts in pause)
-[ Send Maya ]    // type message that is sent in the maya channel
-[ Send Special ]    // type message that is sent as the 'special user' in the chat
-[ Send donation ]    // type name, then type amount sent as donation with random text
-[ Burst Subs ]    // type number (can be negative) that is added to the subscriber count
+[ Mood Block ]       // select current mood (1 required)
+[ Location Block]    // select current location (1 required)
+[ Pause / Resume ]   // pause / resume the chatbot (starts in pause)
+[ Send Maya ]        // type message that is sent in the maya channel
+[ Send Special ]     // type message that is sent as the 'special user' in the chat
+[ Send Donation ]    // type name, then type amount sent as donation with random text
+[ Burst Subs ]       // type number (can be negative) that is added to the subscriber count
 [ Burst Viewers ]    // type number (can be negative) that is added to the viewer count
-[ Spam ]    // type message that is spammed in varied forms in the chat for 20 ticks
-[ Reload Config ] // Reloads configs
+[ Spam ]             // type message that is spammed in varied forms in the chat for 20 ticks
+[ Reload Config ]    // Reloads configs (doesnt really work, sorry)
 [ Init Leaderboard ] // Starts a new leaderboard in the respective channel
-[ Refresh Board ] // Manually refresh leaderboard (automativally once per minute)
-[ Hype - ] Slows all chats and donations by 20%
-[ Hype + ] Speeds up all chats and donations by 20% (up to 500%)
+[ Refresh Board ]    // Manually refresh leaderboard (automativally once per minute)
+[ Hype - ]           // Slows all chats and donations by 20%
+[ Hype + ]           // Speeds up all chats and donations by 20% (up to 500%)
 ```
 
 ## Config
