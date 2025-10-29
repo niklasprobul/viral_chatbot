@@ -1,13 +1,10 @@
 {
   "stream_start": {
-    "chat_window": 12,
-    "evil_lines": [],
     "maya_lines": [
       "We are live!",
       "Please double check all feeds",
       "And dont forget your role call, babes!"
     ],
-    "donation_window": 8,
     "donations": [
       {
         "donor": "ultimaunum",
@@ -17,18 +14,18 @@
     ],
     "donation_level": 0.11,
     "subs_per_minute": 30,
-    "viewers_per_minute": 30
+    "viewers_per_minute": 30,
+    "audience_hooks": [
+      "Lets gooooo!",
+      "FIRST"]
   },
   "outside": {
-    "chat_window": 12,
-    "evil_lines": [],
     "maya_lines": [
       "the feed is clear! Looking good, babes!",
       "Tell Marco to hype of the chat before entering the hospital!",
       "remember: first morgue, than staff dorms!",
       "You can look around more if we have enough time"
     ],
-    "donation_window": 8,
     "donations": [
       {
         "donor": "ultimaunum",
@@ -38,22 +35,15 @@
     ],
     "donation_level": 0.08,
     "subs_per_minute": 10,
-    "viewers_per_minute": 10
+    "viewers_per_minute": 10,
+    "audience_hooks": []
   },
   "bridge": {
-    "chat_window": 10,
-    "evil_lines": [
-      "The water looks hungry",
-      "Spektral Krew Rox!!!!",
-      "Hey Marco!",
-      "Dont look down"
-    ],
     "maya_lines": [
       "dont forget to place the wifi repeater!",
       "get it somewhere high up, but dont fucking fall in!",
       "we want to go viral, but not that fucking bad, babes!"
     ],
-    "donation_window": 6,
     "donations": [
       {
         "donor": "ultimaunum",
@@ -63,24 +53,21 @@
     ],
     "donation_level": 0.10,
     "subs_per_minute": 25,
-    "viewers_per_minute": 25
+    "viewers_per_minute": 25,
+    "audience_hooks": [
+      "The water looks hungry",
+      "Spektral Krew Rox!!!!",
+      "Hey Marco!",
+      "Dont look down"
+    ]
   },
   "lemon_grove": {
-    "chat_window": 12,
-    "evil_lines": [
-      "They look so tasty",
-      "Take a bite",
-      "Dont be a pussy!",
-      "YUMYUMYUM",
-      "EAT ONE!!!"
-    ],
     "maya_lines": [
       "the grove should be just in range of the last repeater",
       "I have 10 minutes of b-roll and ads to fill you going to the hospital and setting up the next one",
       "high up would be ideal, but for times sake just put it in front of the building.",
       "You're doing great, babes! But keep up the engagement!"
     ],
-    "donation_window": 8,
     "donations": [
       {
         "donor": "ultimaunum",
@@ -90,23 +77,21 @@
     ],
     "donation_level": 0.07,
     "subs_per_minute": 20,
-    "viewers_per_minute": 40
+    "viewers_per_minute": 40,
+    "audience_hooks": [
+      "They look so tasty",
+      "Take a bite",
+      "Dont be a pussy!",
+      "YUMYUMYUM",
+      "EAT ONE!!!"
+    ]
   },
   "cremation_pit": {
-    "chat_window": 9,
-    "evil_lines": [
-      "Is that a dog?",
-      "Shit just got real!",
-      "OMG!!!",
-      "IS IT FUCKIN’ SATANSIST?!!!",
-      "Oh come on! That’s SO fake!"
-    ],
     "maya_lines": [
       "If you spot some remains, tell me! I'll switch to the krew+ ad when you approach.",
       "This should give you 60 seconds to film it",
       "But remember to fucking tell me. We dont wanna get a 30 day ban again for having this on stream... Okay, babes?"
     ],
-    "donation_window": 5,
     "donations": [
       {
         "donor": "uwugamer",
@@ -126,21 +111,20 @@
     ],
     "donation_level": 0.14,
     "subs_per_minute": 25,
-    "viewers_per_minute": 20
+    "viewers_per_minute": 20,
+    "audience_hooks": [
+      "Is that a dog?",
+      "Shit just got real!",
+      "OMG!!!",
+      "IS IT FUCKIN’ SATANSIST?!!!",
+      "Oh come on! That’s SO fake!"
+    ]
   },
   "hospital_morgue": {
-    "chat_window": 8,
-    "evil_lines": [
-      "I’ve been waiting for this!!",
-      "They’re sweating SO much.",
-      "I can feel the evil through the screen!",
-      "I keep seeing things moving in the darkness. Is it just me?"
-    ],
     "maya_lines": [
       "The feed is still clear enough.",
       "Good repeater placement, babes!"
     ],
-    "donation_window": 4,
     "donations": [
       {
         "donor": "uwugamer",
@@ -160,24 +144,21 @@
     ],
     "donation_level": 0.16,
     "subs_per_minute": 80,
-    "viewers_per_minute": 100
+    "viewers_per_minute": 100,
+    "audience_hooks": [
+      "I’ve been waiting for this!!",
+      "They’re sweating SO much.",
+      "I can feel the evil through the screen!",
+      "I keep seeing things moving in the darkness. Is it just me?"
+    ]
   },
   "hospital_staff_dorms": {
-    "chat_window": 8,
-    "evil_lines": [
-      "Fuck, I need to get to bed, but I can’t stop watching!",
-      "Can anyone else hear that buzzing? Sounds like flies!",
-      "Is that a blood stain?",
-      "These guys had to be up to some evil shit.",
-      "I am so cold. Let us out."
-    ],
     "maya_lines": [
       "Keep the engagement and hype up!",
       "the witchboard time is coming up, so dont waste too much time here, if there is nothing to find!",
       "There have been some large donations so far!",
       "The cash is legit, so keep them entertained!"
     ],
-    "donation_window": 4,
     "donations": [
       {
         "donor": "ultimaunum",
@@ -192,24 +173,22 @@
     ],
     "donation_level": 0.2,
     "subs_per_minute": 145,
-    "viewers_per_minute": 175
+    "viewers_per_minute": 175,
+    "audience_hooks": [
+      "Fuck, I need to get to bed, but I can’t stop watching!",
+      "Can anyone else hear that buzzing? Sounds like flies!",
+      "Is that a blood stain?",
+      "These guys had to be up to some evil shit.",
+      "I am so cold. Let us out."
+    ]
   },
   "hospital_secret": {
-    "chat_window": 6,
-    "evil_lines": [
-      "WTF?!!!",
-      "Are those bullet holes?",
-      "Is this for real?",
-      "I can’t stop watching.",
-      "What does Corrina make of it?"
-    ],
     "maya_lines": [
       "A secret fucking passage?!",
       "Thats fucking GOLD, babes! CASH FUCKING MONEY!",
       "Im ready for the krew+ ad if there is something that will get us demonitized",
       "dont risk it and be carefull, babes!"
     ],
-    "donation_window": 3,
     "donations": [
       {
         "donor": "ultimaunum",
@@ -229,22 +208,20 @@
     ],
     "donation_level": 0.3,
     "subs_per_minute": 100,
-    "viewers_per_minute": 150
+    "viewers_per_minute": 150,
+    "audience_hooks": [
+      "WTF?!!!",
+      "Are those bullet holes?",
+      "Is this for real?",
+      "I can’t stop watching.",
+      "What does Corrina make of it?"
+    ]
   },
   "chapel": {
-    "chat_window": 6,
-    "evil_lines": [
-      "This place is off the hook!",
-      "Where the hell is that buzzing coming from?",
-      "Almost time! I can’t wait!",
-      "There have definitely been human sacrifices in this place.",
-      "You guys should get out. I have a bad feeling about this."
-    ],
     "maya_lines": [
       "Tell Marco to do some VO while we get some nice shots of the chapel",
       "I got another 10 min of ads and b-roll for you to set up the static cameras and the witchboard in the crypt"
     ],
-    "donation_window": 3,
     "donations": [
       {
         "donor": "InternetExplorer",
@@ -264,36 +241,37 @@
     ],
     "donation_level": 0.1,
     "subs_per_minute": 100,
-    "viewers_per_minute": 150
+    "viewers_per_minute": 150,
+    "audience_hooks": [
+      "This place is off the hook!",
+      "Where the hell is that buzzing coming from?",
+      "Almost time! I can’t wait!",
+      "There have definitely been human sacrifices in this place.",
+      "You guys should get out. I have a bad feeling about this."
+    ]
   },
   "crypt": {
-    "chat_window": 6,
-    "evil_lines": [
-      "You are not alone"
-    ],
     "maya_lines": [
       "home strech!",
       "make it convincing, babes!",
       "dont drag it out too long, but ask the usual questions first"
     ],
-    "donation_window": 3,
     "donations": [
       {
         "donor": "ultimaunum",
         "amount": 5000,
         "note": "do it now"
-      }],
+      }
+    ],
     "donation_level": 0.20,
     "subs_per_minute": 200,
-    "viewers_per_minute": 300
+    "viewers_per_minute": 300,
+    "audience_hooks": [
+      "You are not alone"
+    ]
   },
   "finale": {
-    "chat_window": 4,
-    "evil_lines": [
-    ],
-    "maya_lines": [
-    ],
-    "donation_window": 2,
+    "maya_lines": [],
     "donations": [
       {
         "donor": "ultimaunum",
@@ -303,6 +281,7 @@
     ],
     "donation_level": 0.25,
     "subs_per_minute": -100000,
-    "viewers_per_minute": -100000
+    "viewers_per_minute": -100000,
+    "audience_hooks": []
   }
 }

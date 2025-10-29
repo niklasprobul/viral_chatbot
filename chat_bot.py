@@ -65,18 +65,13 @@ def load_secrets(base: pathlib.Path) -> Dict[str, object]:
 DATA_DIR = pathlib.Path(os.getenv("DATA_DIR", "data"))
 secrets = load_secrets(DATA_DIR)
 
-# This is your bot token from BotFather
-TOKEN = secrets.get("token", '')
+# Bot token
+TOKEN = secrets.get("token", "")
 
-# Only this user can control the bot in DM. 
-# Send a message to @RawDataBot to get your user id.
+# Admin user id
 ADMIN_ID = secrets.get("admin_id", 1234)
 
 # Supergroup chat id and topic ids
-# Set CHAT_ID to your supergroup id
-# Set TOPICS mapping to the message_thread_id values of your forum topics
-# Right click -> copy message link to get the ids in the following format:
-# https://t.me/c/[chat_id]/[topic_id]/[message_id]]
 CHAT_ID = secrets.get("chat_id", 1234)
 TOPICS = {
     "chat": 6,
@@ -87,6 +82,7 @@ TOPICS = {
 
 SPECIAL_USER_NAME = "ulitmaunum"
 
+# Fallback mood settings (used if mood_config.json is missing or incomplete)
 DEFAULT_MOOD_INTERVAL = {
     "angry": 0.5,
     "bored": 1.6,
@@ -105,27 +101,26 @@ DEFAULT_DONATION_RANGES = {
     "shocked": (20.0, 200.0),
 }
 
+# -1 means bleed viewers/subs, +1 means gain viewers/subs
+DEFAULT_AUDIENCE_TREND = {
+    "angry": -1,
+    "bored": -1,
+    "neutral": 1,
+    "good": 1,
+    "excited": 1,
+    "shocked": 1,
+}
+
 BASE_INTERVAL = 2.0
 # to prevent 429 too many requests errors
 RATE_GAP = 1.2
 
-LOCATIONS = [
-    "stream_start",
-    "bridge",
-    "lemon_grove",
-    "cremation_pit",
-    "outside_hospital",
-    "hospital_morgue",
-    "hospital_staff_dorms",
-    'hospital_secret',
-    "crypt",
-    "finale",
-]
-
 # ---------------- Utility helpers ----------------
+
 
 def hb(s: str) -> str:
     return f"<b>{h(s)}</b>"
+
 
 def format_thousand_dot(n: int) -> str:
     s = str(max(0, n))
@@ -137,11 +132,14 @@ def format_thousand_dot(n: int) -> str:
     parts.reverse()
     return ".".join(parts)
 
+
 def money_fmt_int(x: int) -> str:
     return f"{x} €"
 
+
 _send_lock = asyncio.Lock()
 _last_send_ts: float = 0.0
+
 
 async def throttled_call(coro_func, *args, **kwargs):
     global _last_send_ts, RATE_GAP
@@ -168,9 +166,11 @@ async def throttled_call(coro_func, *args, **kwargs):
             _last_send_ts = asyncio.get_running_loop().time()
             return msg
 
+
 async def send_html(bot, chat_id: int, text: str, *, thread_id: Optional[int] = None, notify: bool = False):
     async def op(**kw):
         return await bot.send_message(**kw)
+
     try:
         return await throttled_call(
             op,
@@ -200,9 +200,11 @@ async def send_html(bot, chat_id: int, text: str, *, thread_id: Optional[int] = 
             disable_notification=not notify,
         )
 
+
 async def edit_html(bot, chat_id: int, message_id: int, text: str):
     async def op(**kw):
         return await bot.edit_message_text(**kw)
+
     return await throttled_call(
         op,
         chat_id=chat_id,
@@ -211,7 +213,9 @@ async def edit_html(bot, chat_id: int, message_id: int, text: str):
         parse_mode=ParseMode.HTML,
     )
 
-# ---------------- Data loading ----------------
+
+# ---------------- Data loading helpers ----------------
+
 
 def load_lines(path: pathlib.Path) -> List[str]:
     try:
@@ -225,17 +229,29 @@ def load_lines(path: pathlib.Path) -> List[str]:
         log.warning("Failed to load %s: %s", path, e)
     return []
 
+
 def load_usernames(base: pathlib.Path) -> List[str]:
     names = load_lines(base / "usernames.txt")
     if names:
         return names
     return [
-        "Watcher42","FoggyLens","CreakyDoor","HexBug","Lighthouser","CthuluChow",
-        "CryptWatch","MorgueFiles","EchoJoint","NightShift","HushPeeper","BatteryLow"
+        "Watcher42",
+        "FoggyLens",
+        "CreakyDoor",
+        "HexBug",
+        "Lighthouser",
+        "CthuluChow",
+        "CryptWatch",
+        "MorgueFiles",
+        "EchoJoint",
+        "NightShift",
+        "HushPeeper",
+        "BatteryLow",
     ]
 
-def fallback_prompts():
-    mood_prompts = {
+
+def fallback_prompts() -> Dict[str, List[str]]:
+    return {
         "angry": [
             "That camera angle is a crime.",
             "Why is no one calling the cops already.",
@@ -267,34 +283,33 @@ def fallback_prompts():
             "This is messed up.",
         ],
     }
-    evil_prompts = [
-        "You called and I answered.",
-        "The light will not save you.",
-        "Debt always comes due.",
-    ]
-    return mood_prompts, evil_prompts
 
-def load_prompts(base: pathlib.Path):
-    mood_prompts, evil_prompts = fallback_prompts()
 
-    for m in list(mood_prompts.keys()):
+def load_prompts(base: pathlib.Path, moods: List[str], locations: List[str]):
+    """
+    Load per-mood and per-location prompt pools from text files.
+    Fallbacks are used if no file is found.
+    """
+    fb = fallback_prompts()
+
+    mood_prompts: Dict[str, List[str]] = {}
+    for m in moods:
         lines = load_lines(base / f"prompts_{m}.txt")
         if lines:
             mood_prompts[m] = lines
-
-    evil_lines = load_lines(base / "prompts_evil.txt")
-    if evil_lines:
-        evil_prompts = evil_lines
+        else:
+            mood_prompts[m] = fb.get(m, ["chat checking in"])
 
     location_prompts: Dict[str, List[str]] = {}
-    for loc in LOCATIONS:
+    for loc in locations:
         lines = load_lines(base / f"prompts_{loc}.txt")
         if lines:
             location_prompts[loc] = lines
         else:
             location_prompts[loc] = []
 
-    return mood_prompts, evil_prompts, location_prompts
+    return mood_prompts, location_prompts
+
 
 def load_json(path: pathlib.Path, default):
     try:
@@ -304,39 +319,134 @@ def load_json(path: pathlib.Path, default):
         log.warning("Failed to load %s: %s", path, e)
     return default
 
-# ---------------- Models ----------------
+
+# ---------------- Config readers ----------------
+
 
 @dataclass
 class LocationScript:
-    evil_lines: List[str] = field(default_factory=list)
+    audience_hooks: List[str] = field(default_factory=list)
     maya_lines: List[str] = field(default_factory=list)
-    donation_window: int = 8
     donations: List[Dict] = field(default_factory=list)
     donation_level: float = 0.10
     subs_per_minute: float = 0.0
     viewers_per_minute: float = 0.0
 
+
+def read_location_scripts(base: pathlib.Path) -> Tuple[Dict[str, LocationScript], List[str]]:
+    """
+    Load location_scripts.json.
+    Also returns the ordered list of available locations.
+    """
+    raw = load_json(base / "location_scripts.json", {})
+    loc_scripts: Dict[str, LocationScript] = {}
+    loc_list: List[str] = []
+
+    for loc, cfg in raw.items():
+        loc_list.append(loc)
+        loc_scripts[loc] = LocationScript(
+            audience_hooks=list(cfg.get("audience_hooks", cfg.get("evil_lines", []))),
+            maya_lines=list(cfg.get("maya_lines", [])),
+            donations=list(cfg.get("donations", [])),
+            donation_level=float(cfg.get("donation_level", 0.10)),
+            subs_per_minute=float(cfg.get("subs_per_minute", 0.0)),
+            viewers_per_minute=float(cfg.get("viewers_per_minute", 0.0)),
+        )
+
+    return loc_scripts, loc_list
+
+
+def read_mood_config(base: pathlib.Path):
+    """
+    Load mood_config.json which defines:
+      - moods and their order
+      - mood_interval multiplier per mood
+      - donation_range [min,max] per mood
+      - audience_trend (+1 or -1) per mood
+    Fallback to DEFAULT_* if file is missing.
+    """
+    raw = load_json(base / "mood_config.json", {})
+    moods_section = raw.get("moods", {})
+
+    if not isinstance(moods_section, dict) or not moods_section:
+        moods_section = {}
+        for m in DEFAULT_MOOD_INTERVAL.keys():
+            moods_section[m] = {
+                "mood_interval": DEFAULT_MOOD_INTERVAL[m],
+                "donation_range": list(DEFAULT_DONATION_RANGES.get(m, (5.0, 20.0))),
+                "audience_trend": DEFAULT_AUDIENCE_TREND.get(m, 1),
+            }
+
+    moods_list: List[str] = []
+    mood_interval: Dict[str, float] = {}
+    donation_ranges: Dict[str, Tuple[float, float]] = {}
+    audience_trend: Dict[str, int] = {}
+
+    for m, cfg in moods_section.items():
+        moods_list.append(m)
+        if not isinstance(cfg, dict):
+            cfg = {}
+
+        mood_interval[m] = float(cfg.get("mood_interval", DEFAULT_MOOD_INTERVAL.get(m, 1.0)))
+
+        dr = cfg.get("donation_range", DEFAULT_DONATION_RANGES.get(m, (5.0, 20.0)))
+        if not (isinstance(dr, (list, tuple)) and len(dr) >= 2):
+            dr = DEFAULT_DONATION_RANGES.get(m, (5.0, 20.0))
+        lo, hi = float(dr[0]), float(dr[1])
+        donation_ranges[m] = (lo, hi)
+
+        audience_trend[m] = int(cfg.get("audience_trend", DEFAULT_AUDIENCE_TREND.get(m, 1)))
+
+    return moods_list, mood_interval, donation_ranges, audience_trend
+
+
+# Audience config is unchanged
+def load_audience_config(st: "State"):
+    cfg = load_json(st.base / "audience_config.json", {})
+    subs_start = cfg.get("subscribers_start")
+    subs_plateau = cfg.get("subscribers_plateau")
+    viewers_start = cfg.get("viewers_start")
+    viewers_plateau = cfg.get("viewers_plateau")
+
+    if isinstance(subs_start, (int, float)):
+        st.subscribers = int(subs_start)
+    if isinstance(subs_plateau, (int, float)):
+        st.plateau_subs = int(subs_plateau)
+    if isinstance(viewers_start, (int, float)):
+        st.viewers = int(viewers_start)
+    if isinstance(viewers_plateau, (int, float)):
+        st.plateau_viewers = int(viewers_plateau)
+
+
+# ---------------- Models ----------------
+
+
 @dataclass
 class State:
     base: pathlib.Path
+
+    moods: List[str] = field(default_factory=list)
+    locations: List[str] = field(default_factory=list)
+
     mood_prompts: Dict[str, List[str]] = field(default_factory=dict)
-    evil_prompts: List[str] = field(default_factory=list)
     location_prompts: Dict[str, List[str]] = field(default_factory=dict)
     usernames: List[str] = field(default_factory=list)
+
+    mood_interval: Dict[str, float] = field(default_factory=dict)
+    donation_ranges: Dict[str, Tuple[float, float]] = field(default_factory=dict)
+    audience_trend: Dict[str, int] = field(default_factory=dict)
 
     mood: str = "neutral"
     location: str = "stream_start"
     paused: bool = True
 
-    mood_interval: Dict[str, float] = field(default_factory=lambda: DEFAULT_MOOD_INTERVAL.copy())
     base_interval: float = BASE_INTERVAL
     hype: float = 1.0
 
-    donation_ranges: Dict[str, Tuple[float, float]] = field(default_factory=lambda: DEFAULT_DONATION_RANGES.copy())
     loc_donation_level: float = 0.10
     donation_meter: float = 0.0
 
-    evil_remaining: List[str] = field(default_factory=list)
+    hook_remaining: List[str] = field(default_factory=list)
     maya_remaining: List[str] = field(default_factory=list)
     donation_window_remaining: int = 0
     pred_donations_remaining: List[Dict] = field(default_factory=list)
@@ -372,58 +482,28 @@ class State:
 
     loc_change_ts: float = field(default_factory=lambda: time.time())
 
+
 # ---------------- Globals that depend on State ----------------
 
-# Initialize LOCATION_SCRIPTS first so functions can fill it.
 LOCATION_SCRIPTS: Dict[str, LocationScript] = {}
 
-# STATE is now created with a minimal default instance
-# so it's never None. build_app() will overwrite it with a fully loaded one.
+# placeholder STATE. build_app() will overwrite with a fully loaded one.
 STATE: State = State(base=DATA_DIR)
 
 OUTBOX: Dict[str, List[str]] = {"chat": [], "donations": [], "maya": []}
 CHANNEL_ORDER = ["maya", "donations", "chat"]
 _rr_index = 0
 
-# ---------------- State setup ----------------
 
-def load_location_scripts(st: State):
-    global LOCATION_SCRIPTS
-    LOCATION_SCRIPTS = {}
-    data = load_json(st.base / "location_scripts.json", {})
-    for loc in data.keys():
-        cfg = data.get(loc, {})
-        LOCATION_SCRIPTS[loc] = LocationScript(
-            evil_lines=list(cfg.get("evil_lines", [])),
-            maya_lines=list(cfg.get("maya_lines", [])),
-            donation_window=int(cfg.get("donation_window", 8)),
-            donations=list(cfg.get("donations", [])),
-            donation_level=float(cfg.get("donation_level", 0.10)),
-            subs_per_minute=float(cfg.get("subs_per_minute", 0.0)),
-            viewers_per_minute=float(cfg.get("viewers_per_minute", 0.0)),
-        )
+# ---------------- State setup and refresh ----------------
 
-def load_audience_config(st: State):
-    cfg = load_json(st.base / "audience_config.json", {})
-    subs_start = cfg.get("subscribers_start")
-    subs_plateau = cfg.get("subscribers_plateau")
-    viewers_start = cfg.get("viewers_start")
-    viewers_plateau = cfg.get("viewers_plateau")
-    if isinstance(subs_start, (int, float)):
-        st.subscribers = int(subs_start)
-    if isinstance(subs_plateau, (int, float)):
-        st.plateau_subs = int(subs_plateau)
-    if isinstance(viewers_start, (int, float)):
-        st.viewers = int(viewers_start)
-    if isinstance(viewers_plateau, (int, float)):
-        st.plateau_viewers = int(viewers_plateau)
 
 def reset_location_windows(st: State):
     ls = LOCATION_SCRIPTS.get(st.location, LocationScript())
 
-    st.evil_remaining = list(ls.evil_lines)
+    st.hook_remaining = list(ls.audience_hooks)
     st.maya_remaining = list(ls.maya_lines)
-    st.donation_window_remaining = ls.donation_window
+    st.donation_window_remaining = 1
     st.pred_donations_remaining = list(ls.donations)
     st.loc_donation_level = ls.donation_level
     st.loc_subs_rate = ls.subs_per_minute
@@ -437,57 +517,99 @@ def reset_location_windows(st: State):
     st.loc_change_ts = time.time()
 
     log.info(
-        "Location %s loaded, evil %d, maya %d, donation_window %d, fixed donations %d, "
+        "Location %s loaded, hooks %d, maya %d, scripted_donations %d, "
         "don_lvl %.2f, subs/min %.2f, viewers/min %.2f",
         st.location,
-        len(st.evil_remaining),
+        len(st.hook_remaining),
         len(st.maya_remaining),
-        st.donation_window_remaining,
         len(st.pred_donations_remaining),
         st.loc_donation_level,
         st.loc_subs_rate,
         st.loc_viewers_rate,
     )
 
+
 def init_state() -> State:
     base = DATA_DIR
-    mood_prompts, location_prompts = load_prompts(base)
+
+    moods_list, mood_interval, donation_ranges, audience_trend = read_mood_config(base)
+    loc_scripts, loc_list = read_location_scripts(base)
+    mood_prompts, location_prompts = load_prompts(base, moods_list, loc_list)
+    usernames = load_usernames(base)
 
     st = State(
         base=base,
-        mood_prompts=mood_prompts,,
+        moods=moods_list,
+        locations=loc_list,
+        mood_prompts=mood_prompts,
         location_prompts=location_prompts,
-        usernames=load_usernames(base),
+        usernames=usernames,
+        mood_interval=mood_interval,
+        donation_ranges=donation_ranges,
+        audience_trend=audience_trend,
+        mood=moods_list[0] if moods_list else "neutral",
+        location=loc_list[0] if loc_list else "stream_start",
     )
 
-    mm = load_json(base / "mood_multipliers.json", {})
-    if isinstance(mm, dict):
-        for k, v in mm.items():
-            if k in st.mood_interval and isinstance(v, (int, float)):
-                st.mood_interval[k] = float(v)
-
-    dr = load_json(base / "donation_ranges.json", {})
-    if isinstance(dr, dict):
-        for k, v in dr.items():
-            if (
-                k in st.donation_ranges
-                and isinstance(v, (list, tuple))
-                and len(v) >= 2
-            ):
-                lo, hi = float(v[0]), float(v[1])
-                if 0 <= lo < hi:
-                    st.donation_ranges[k] = (lo, hi)
-
-    load_location_scripts(st)
+    # Load audience config
     load_audience_config(st)
+
+    # publish LOCATION_SCRIPTS global
+    global LOCATION_SCRIPTS
+    LOCATION_SCRIPTS = loc_scripts
+
+    reset_location_windows(st)
     return st
 
+
+def refresh_configs(st: State, app: Application):
+    """
+    Re-read all configs (mood_config.json, location_scripts.json,
+    audience_config.json, prompt files, usernames).
+    Keeps leaderboard and donors.
+    """
+    moods_list, mood_interval, donation_ranges, audience_trend = read_mood_config(st.base)
+    loc_scripts, loc_list = read_location_scripts(st.base)
+    mood_prompts, location_prompts = load_prompts(st.base, moods_list, loc_list)
+    usernames = load_usernames(st.base)
+
+    st.moods = moods_list
+    st.locations = loc_list
+    st.mood_prompts = mood_prompts
+    st.location_prompts = location_prompts
+    st.usernames = usernames
+    st.mood_interval = mood_interval
+    st.donation_ranges = donation_ranges
+    st.audience_trend = audience_trend
+
+    # Update globals
+    global LOCATION_SCRIPTS
+    LOCATION_SCRIPTS = loc_scripts
+
+    # Reload audience targets
+    load_audience_config(st)
+
+    # ensure current mood/location are valid
+    if st.mood not in st.moods and st.moods:
+        st.mood = st.moods[0]
+    if st.location not in st.locations and st.locations:
+        st.location = st.locations[0]
+
+    reset_location_windows(st)
+
+    # reschedule chat loop if running, so tick interval reflects new mood config
+    if not st.paused:
+        schedule_chat(app)
+
+
 # ---------------- Queue helpers ----------------
+
 
 def enqueue(channel: str, line: str):
     if channel not in OUTBOX:
         OUTBOX[channel] = []
     OUTBOX[channel].append(line)
+
 
 def dequeue_one_chunk(channel: str, max_len: int = 3800) -> Optional[str]:
     buf = []
@@ -505,7 +627,9 @@ def dequeue_one_chunk(channel: str, max_len: int = 3800) -> Optional[str]:
         return None
     return "\n".join(buf)
 
+
 # ---------------- Content generation ----------------
+
 
 def pick_chat_line(st: State) -> str:
     mood_pool = st.mood_prompts.get(st.mood) or st.mood_prompts.get("neutral", [])
@@ -524,11 +648,13 @@ def pick_chat_line(st: State) -> str:
 
     return random.choice(pool)
 
+
 def sample_amount_int(st: State) -> int:
     lo, hi = st.donation_ranges.get(st.mood, (5.0, 20.0))
     x = random.betavariate(1.2, 3.0)  # left skew
     amt = lo + x * (hi - lo)
     return max(int(round(amt)), int(lo))
+
 
 def pick_donor_name(st: State) -> str:
     # VIP donor name chance 1 percent
@@ -547,7 +673,9 @@ def pick_donor_name(st: State) -> str:
         ]
     return random.choice(pool)
 
+
 # ----- Spam emission -----
+
 
 def build_spam_variant(base_msg: str) -> str:
     # 50 percent ALL CAPS
@@ -556,6 +684,7 @@ def build_spam_variant(base_msg: str) -> str:
     endings = ["", "!", " !!!", " !!", " !?!"]
     msg += random.choice(endings)
     return msg
+
 
 async def emit_spam(context: CallbackContext):
     st = STATE
@@ -574,7 +703,9 @@ async def emit_spam(context: CallbackContext):
     if st.spam_ticks_left <= 0:
         st.spam_active = False
 
+
 # ----- Maya auto lines -----
+
 
 async def emit_maya(context: CallbackContext):
     st = STATE
@@ -590,7 +721,9 @@ async def emit_maya(context: CallbackContext):
         maya_text = hb("Maya") + ": " + h(raw_line)
         enqueue("maya", maya_text)
 
-# ----- Viewer chat + evil lines -----
+
+# ----- Viewer chat + hook lines -----
+
 
 async def emit_chat(context: CallbackContext):
     st = STATE
@@ -602,19 +735,21 @@ async def emit_chat(context: CallbackContext):
     now = time.time()
     seconds_in_location = now - st.loc_change_ts
 
-    # evil first 5 min, one per tick, username disguised as viewer
-    if st.evil_remaining and seconds_in_location <= 300:
-        raw_line = st.evil_remaining.pop(0)
-        evil_user = random.choice(st.usernames) if st.usernames else "Viewer"
-        evil_text = hb(evil_user) + ": " + h(raw_line)
-        enqueue("chat", evil_text)
+    # audience_hooks first 5 min, one per tick, username disguised as viewer
+    if st.hook_remaining and seconds_in_location <= 300:
+        raw_line = st.hook_remaining.pop(0)
+        hook_user = random.choice(st.usernames) if st.usernames else "Viewer"
+        hook_text = hb(hook_user) + ": " + h(raw_line)
+        enqueue("chat", hook_text)
 
     # normal viewer chat line
     line = pick_chat_line(st)
     user = random.choice(st.usernames) if st.usernames else "Viewer"
     enqueue("chat", hb(user) + ": " + h(line))
 
+
 # ----- Donations -----
+
 
 async def donate_and_update(donor: str, amount_eur_int: int, note: str):
     st = STATE
@@ -624,6 +759,7 @@ async def donate_and_update(donor: str, amount_eur_int: int, note: str):
     if note:
         text += " - " + h(note)
     enqueue("donations", text)
+
 
 async def emit_donations(context: CallbackContext):
     st = STATE
@@ -636,9 +772,7 @@ async def emit_donations(context: CallbackContext):
             donor = d.get("donor") or pick_donor_name(st)
             amt_int = max(int(round(float(d.get("amount", 25.0)))), 0)
             await donate_and_update(donor, amt_int, d.get("note", ""))
-            st.donation_window_remaining = LOCATION_SCRIPTS.get(
-                st.location, LocationScript()
-            ).donation_window
+            st.donation_window_remaining = 1
             sent_one = True
         else:
             # attempt early 25 percent
@@ -647,9 +781,7 @@ async def emit_donations(context: CallbackContext):
                 donor = d.get("donor") or pick_donor_name(st)
                 amt_int = max(int(round(float(d.get("amount", 25.0)))), 0)
                 await donate_and_update(donor, amt_int, d.get("note", ""))
-                st.donation_window_remaining = LOCATION_SCRIPTS.get(
-                    st.location, LocationScript()
-                ).donation_window
+                st.donation_window_remaining = 1
                 sent_one = True
             else:
                 st.donation_window_remaining -= 1
@@ -668,7 +800,9 @@ async def emit_donations(context: CallbackContext):
             note = pick_chat_line(st)
             await donate_and_update(donor, amt_int, note)
 
+
 # ---------------- Audience simulation ----------------
+
 
 def update_subscribers(st: State):
     # Finale logic: lock subs to 1
@@ -683,8 +817,9 @@ def update_subscribers(st: State):
     delta_raw = base_rate * random.uniform(0.5, 1.5)
     delta = int(round(delta_raw))
 
-    # bored or angry lose subs
-    if st.mood in ["bored", "angry"]:
+    # mood-driven trend: negative bleeds, positive gains
+    trend = st.audience_trend.get(st.mood, 1)
+    if trend < 0:
         delta = -delta
 
     # plateau rule unless crypt or finale
@@ -697,6 +832,7 @@ def update_subscribers(st: State):
         new_val = 1
     st.subscribers = new_val
     log.info("Subscribers %+d -> %d", delta, st.subscribers)
+
 
 def update_viewers(st: State):
     # Finale logic: lock viewers to 1
@@ -711,8 +847,9 @@ def update_viewers(st: State):
     delta_raw = base_rate * random.uniform(0.5, 1.5)
     delta = int(round(delta_raw))
 
-    # bored or angry bleed viewers
-    if st.mood in ["bored", "angry"]:
+    # mood-driven trend: negative bleeds, positive gains
+    trend = st.audience_trend.get(st.mood, 1)
+    if trend < 0:
         delta = -delta
 
     # plateau unless crypt or finale
@@ -726,7 +863,9 @@ def update_viewers(st: State):
     st.viewers = new_val
     log.info("Viewers %+d -> %d", delta, st.viewers)
 
+
 # ---------------- Leaderboard rendering ----------------
+
 
 def render_top_text(st: State) -> str:
     subs_line = "Subscribers: " + hb(format_thousand_dot(st.subscribers))
@@ -749,6 +888,7 @@ def render_top_text(st: State) -> str:
     lines.append("Total: " + hb(money_fmt_int(total_sum)))
     return "\n".join(lines)
 
+
 async def ensure_leaderboard_message(bot) -> int:
     st = STATE
     if st.leaderboard_msg_id is not None:
@@ -761,6 +901,7 @@ async def ensure_leaderboard_message(bot) -> int:
     )
     st.leaderboard_msg_id = msg.message_id
     return st.leaderboard_msg_id
+
 
 async def leaderboard_tick(context: CallbackContext):
     bot = context.application.bot
@@ -812,6 +953,7 @@ async def leaderboard_tick(context: CallbackContext):
 
 # ---------------- Scheduling loops ----------------
 
+
 async def chat_tick(context: CallbackContext):
     st = STATE
     if st.paused:
@@ -823,16 +965,18 @@ async def chat_tick(context: CallbackContext):
     # Maya auto lines (first 5 minutes per location)
     await emit_maya(context)
 
-    # Viewer chat (evil+normal)
+    # Viewer chat (hooks + normal)
     await emit_chat(context)
 
     # Donations (scripted always, organic unless finale)
     await emit_donations(context)
 
+
 def calc_tick_interval(st: State) -> float:
     mult = st.mood_interval.get(st.mood, 1.0)
     eff = st.base_interval * mult / max(st.hype, 0.1)
     return max(1.2, eff)
+
 
 def schedule_chat(app: Application):
     st = STATE
@@ -860,11 +1004,13 @@ def schedule_chat(app: Application):
         st.location,
     )
 
+
 def unschedule_chat(app: Application):
     st = STATE
     for job in app.job_queue.get_jobs_by_name(st.job_name):
         job.schedule_removal()
     log.info("Unscheduled chat loop")
+
 
 async def drain_once(context: CallbackContext):
     bot = context.application.bot
@@ -878,7 +1024,8 @@ async def drain_once(context: CallbackContext):
         _rr_index = (_rr_index + 1) % n
         if chunk:
             thread_id = TOPICS.get(ch)
-            msg = await send_html(bot, CHAT_ID, chunk, thread_id=thread_id)
+            await send_html(bot, CHAT_ID, chunk, thread_id=thread_id)
+
 
 def schedule_drain(app: Application):
     st = STATE
@@ -897,8 +1044,10 @@ def schedule_drain(app: Application):
     )
     log.info("Scheduled global drain every %.2f s", RATE_GAP)
 
+
 def reschedule_drain(app: Application):
     schedule_drain(app)
+
 
 def schedule_top_refresh(app: Application):
     st = STATE
@@ -917,12 +1066,16 @@ def schedule_top_refresh(app: Application):
     )
     log.info("Scheduled leaderboard refresh every 60 seconds")
 
+
 # ---------------- Admin panel and commands ----------------
 
+
 HELP_TEXT = (
-    hb("Viral control") + "\n"
+    hb("Viral control")
+    + "\n"
     + "Admin DM only. Panel controls mood, location, hype, pause/resume, Maya, Special, Donation, Spam, Bursts, Refresh Board.\n"
-    + hb("Commands") + "\n"
+    + hb("Commands")
+    + "\n"
     + "/panel - show admin panel\n"
     + "/mood <name> - set mood\n"
     + "/location <name> - set location\n"
@@ -933,40 +1086,34 @@ HELP_TEXT = (
     + "/set_interval <seconds> - change base message interval\n"
     + "/set_rate_gap <seconds> - change min seconds between sends\n"
     + "/set_donation_range <mood> <min> <max> - set amount range for mood\n"
-    + "/reload_scripts - reload all config\n"
+    + "/reload_configs - reload all configs\n"
     + "/top - init/update leaderboard"
 )
 
-def panel_markup(st: State) -> InlineKeyboardMarkup:
-    mood_buttons = [
-        [
-            InlineKeyboardButton(
-                text=(("✓ " if st.mood == m else "") + m),
-                callback_data=f"mood:{m}",
-            ) for m in ["angry", "bored"]
-        ],
-        [
-            InlineKeyboardButton(
-                text=(("✓ " if st.mood == m else "") + m),
-                callback_data=f"mood:{m}",
-            ) for m in ["neutral", "good"]
-        ],
-        [
-            InlineKeyboardButton(
-                text=(("✓ " if st.mood == m else "") + m),
-                callback_data=f"mood:{m}",
-            ) for m in ["excited", "shocked"]
-        ],
-    ]
 
-    loc_rows = []
-    for i in range(0, len(LOCATIONS), 3):
-        chunk = LOCATIONS[i:i+3]
+def panel_markup(st: State) -> InlineKeyboardMarkup:
+    # moods in rows of 2
+    mood_rows: List[List[InlineKeyboardButton]] = []
+    for i in range(0, len(st.moods), 2):
+        chunk = st.moods[i:i + 2]
+        mood_rows.append([
+            InlineKeyboardButton(
+                text=(("✓ " if st.mood == m else "") + m),
+                callback_data=f"mood:{m}",
+            )
+            for m in chunk
+        ])
+
+    # locations in rows of 3
+    loc_rows: List[List[InlineKeyboardButton]] = []
+    for i in range(0, len(st.locations), 3):
+        chunk = st.locations[i:i + 3]
         loc_rows.append([
             InlineKeyboardButton(
                 text=(("✓ " if st.location == loc else "") + loc),
                 callback_data=f"loc:{loc}",
-            ) for loc in chunk
+            )
+            for loc in chunk
         ])
 
     controls_main = [
@@ -1004,8 +1151,8 @@ def panel_markup(st: State) -> InlineKeyboardMarkup:
                 callback_data="prompt_spam",
             ),
             InlineKeyboardButton(
-                text="Reload scripts",
-                callback_data="reload",
+                text="Reload configs",
+                callback_data="reload_cfg",
             ),
             InlineKeyboardButton(
                 text="Init leaderboard",
@@ -1028,11 +1175,13 @@ def panel_markup(st: State) -> InlineKeyboardMarkup:
         ],
     ]
 
-    kb = mood_buttons + loc_rows + controls_main
+    kb = mood_rows + loc_rows + controls_main
     return InlineKeyboardMarkup(kb)
+
 
 def preview_tick_interval(st: State) -> float:
     return calc_tick_interval(st)
+
 
 def panel_header(st: State) -> str:
     lo, hi = st.donation_ranges.get(st.mood, (5.0, 20.0))
@@ -1046,8 +1195,10 @@ def panel_header(st: State) -> str:
         + f"\nPaused: {hb(str(st.paused))}"
     )
 
+
 ADMIN_ONLY = filters.ChatType.PRIVATE & filters.User(user_id=ADMIN_ID)
 ADMIN_TEXT_ONLY = ADMIN_ONLY & filters.TEXT & ~filters.COMMAND
+
 
 async def start(update: Update, context: CallbackContext):
     await update.message.reply_text(
@@ -1057,8 +1208,10 @@ async def start(update: Update, context: CallbackContext):
     )
     await panel_cmd(update, context)
 
+
 async def help_cmd(update: Update, context: CallbackContext):
     await update.message.reply_text(HELP_TEXT, parse_mode=ParseMode.HTML)
+
 
 async def panel_cmd(update: Update, context: CallbackContext):
     await update.message.reply_text(
@@ -1066,6 +1219,7 @@ async def panel_cmd(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
         reply_markup=panel_markup(STATE),
     )
+
 
 async def mood_cmd(update: Update, context: CallbackContext):
     if not context.args:
@@ -1075,7 +1229,7 @@ async def mood_cmd(update: Update, context: CallbackContext):
         )
         return
     m = context.args[0].strip().lower()
-    if m not in DEFAULT_MOOD_INTERVAL:
+    if m not in STATE.moods:
         await update.message.reply_text(
             h(f"Unknown mood {m}"),
             parse_mode=ParseMode.HTML,
@@ -1089,6 +1243,7 @@ async def mood_cmd(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
     )
 
+
 async def location_cmd(update: Update, context: CallbackContext):
     if not context.args:
         await update.message.reply_text(
@@ -1097,7 +1252,7 @@ async def location_cmd(update: Update, context: CallbackContext):
         )
         return
     loc = context.args[0].strip().lower()
-    if loc not in LOCATIONS:
+    if loc not in STATE.locations:
         await update.message.reply_text(
             h(f"Unknown location {loc}"),
             parse_mode=ParseMode.HTML,
@@ -1112,6 +1267,7 @@ async def location_cmd(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
     )
 
+
 async def pause_cmd(update: Update, context: CallbackContext):
     STATE.paused = True
     unschedule_chat(context.application)
@@ -1120,6 +1276,7 @@ async def pause_cmd(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
     )
 
+
 async def resume_cmd(update: Update, context: CallbackContext):
     STATE.paused = False
     schedule_chat(context.application)
@@ -1127,6 +1284,7 @@ async def resume_cmd(update: Update, context: CallbackContext):
         h("Resumed. Streaming started."),
         parse_mode=ParseMode.HTML,
     )
+
 
 async def say_maya(update: Update, context: CallbackContext):
     if not context.args:
@@ -1142,6 +1300,7 @@ async def say_maya(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
     )
 
+
 async def say_special(update: Update, context: CallbackContext):
     if not context.args:
         await update.message.reply_text(
@@ -1155,6 +1314,7 @@ async def say_special(update: Update, context: CallbackContext):
         h("Queued."),
         parse_mode=ParseMode.HTML,
     )
+
 
 async def on_admin_text(update: Update, context: CallbackContext):
     st = STATE
@@ -1273,6 +1433,7 @@ async def on_admin_text(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
     )
 
+
 async def set_interval(update: Update, context: CallbackContext):
     if not context.args:
         await update.message.reply_text(
@@ -1295,6 +1456,7 @@ async def set_interval(update: Update, context: CallbackContext):
         h(f"Base interval set to {STATE.base_interval:.2f} s"),
         parse_mode=ParseMode.HTML,
     )
+
 
 async def set_rate_gap(update: Update, context: CallbackContext):
     global RATE_GAP
@@ -1319,6 +1481,7 @@ async def set_rate_gap(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
     )
 
+
 async def set_donation_range(update: Update, context: CallbackContext):
     if len(context.args) != 3:
         await update.message.reply_text(
@@ -1336,7 +1499,7 @@ async def set_donation_range(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML,
         )
         return
-    if m not in DEFAULT_DONATION_RANGES:
+    if m not in STATE.moods:
         await update.message.reply_text(
             h(f"Unknown mood {m}"),
             parse_mode=ParseMode.HTML,
@@ -1354,20 +1517,14 @@ async def set_donation_range(update: Update, context: CallbackContext):
         parse_mode=ParseMode.HTML,
     )
 
-async def reload_scripts(update: Update, context: CallbackContext):
-    mood_prompts, location_prompts = load_prompts(STATE.base)
-    STATE.mood_prompts = mood_prompts
-    STATE.location_prompts = location_prompts
-    STATE.usernames = load_usernames(STATE.base)
 
-    load_location_scripts(STATE)
-    load_audience_config(STATE)
-    reset_location_windows(STATE)
-
+async def reload_configs(update: Update, context: CallbackContext):
+    refresh_configs(STATE, context.application)
     await update.message.reply_text(
-        h("Reloaded scripts, prompts, usernames, and reset windows."),
+        h("Reloaded configs, prompts, usernames, and reset windows."),
         parse_mode=ParseMode.HTML,
     )
+
 
 async def post_top(update: Update, context: CallbackContext):
     await ensure_leaderboard_message(context.application.bot)
@@ -1376,6 +1533,7 @@ async def post_top(update: Update, context: CallbackContext):
         h("Leaderboard initialized or updated."),
         parse_mode=ParseMode.HTML,
     )
+
 
 async def on_panel(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -1388,7 +1546,7 @@ async def on_panel(update: Update, context: CallbackContext):
 
     if data.startswith("mood:"):
         m = data.split(":", 1)[1]
-        if m in DEFAULT_MOOD_INTERVAL:
+        if m in STATE.moods:
             STATE.mood = m
             if not STATE.paused:
                 schedule_chat(context.application)
@@ -1396,7 +1554,7 @@ async def on_panel(update: Update, context: CallbackContext):
 
     elif data.startswith("loc:"):
         loc = data.split(":", 1)[1]
-        if loc in LOCATIONS:
+        if loc in STATE.locations:
             STATE.location = loc
             reset_location_windows(STATE)
             if not STATE.paused:
@@ -1509,16 +1667,8 @@ async def on_panel(update: Update, context: CallbackContext):
         )
         handled = True
 
-    elif data == "reload":
-        mood_prompts, evil_prompts, location_prompts = load_prompts(STATE.base)
-        STATE.mood_prompts = mood_prompts
-        STATE.evil_prompts = evil_prompts
-        STATE.location_prompts = location_prompts
-        STATE.usernames = load_usernames(STATE.base)
-
-        load_location_scripts(STATE)
-        load_audience_config(STATE)
-        reset_location_windows(STATE)
+    elif data == "reload_cfg":
+        refresh_configs(STATE, context.application)
         handled = True
 
     elif data == "post_top":
@@ -1559,13 +1709,14 @@ async def on_panel(update: Update, context: CallbackContext):
     else:
         await query.answer("No change")
 
+
 # ---------------- App wiring ----------------
 
+
 def build_app() -> Application:
-    global STATE
+    global STATE, LOCATION_SCRIPTS
     # overwrite placeholder STATE with a fully initialized one
     STATE = init_state()
-    reset_location_windows(STATE)
 
     app = ApplicationBuilder().token(TOKEN).build()
 
@@ -1587,7 +1738,7 @@ def build_app() -> Application:
     app.add_handler(CommandHandler("set_rate_gap", set_rate_gap, filters=ADMIN_ONLY))
     app.add_handler(CommandHandler("set_donation_range", set_donation_range, filters=ADMIN_ONLY))
 
-    app.add_handler(CommandHandler("reload_scripts", reload_scripts, filters=ADMIN_ONLY))
+    app.add_handler(CommandHandler("reload_configs", reload_configs, filters=ADMIN_ONLY))
     app.add_handler(CommandHandler("top", post_top, filters=ADMIN_ONLY))
 
     app.add_handler(CallbackQueryHandler(on_panel))
@@ -1597,6 +1748,7 @@ def build_app() -> Application:
 
     log.info("Starting Viral bot in silent mode")
     return app
+
 
 if __name__ == "__main__":
     app = build_app()
