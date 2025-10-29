@@ -1183,18 +1183,17 @@ def preview_tick_interval(st: State) -> float:
     return calc_tick_interval(st)
 
 
-def panel_header(st: State) -> str:
+def panel_header(st: State, pad: int = 0) -> str:
     lo, hi = st.donation_ranges.get(st.mood, (5.0, 20.0))
     eff_interval = preview_tick_interval(st)
     return (
-        hb("Admin panel")
+        f'{"-"*pad} {hb("Admin panel")} {"-"*pad}'
         + f"\nMood: {hb(st.mood)}"
         + f"\nLocation: {hb(st.location)}"
         + f"\nDonation range: {hb(f'{int(lo)}-{int(hi)} €')}"
         + f"\nSpeed: {hb(f'{eff_interval:.2f} s tick')}  Hype: {hb(f'{st.hype:.1f}')}"
         + f"\nPaused: {hb(str(st.paused))}"
     )
-
 
 ADMIN_ONLY = filters.ChatType.PRIVATE & filters.User(user_id=ADMIN_ID)
 ADMIN_TEXT_ONLY = ADMIN_ONLY & filters.TEXT & ~filters.COMMAND
@@ -1215,7 +1214,7 @@ async def help_cmd(update: Update, context: CallbackContext):
 
 async def panel_cmd(update: Update, context: CallbackContext):
     await update.message.reply_text(
-        panel_header(STATE),
+        panel_header(STATE, pad=40),
         parse_mode=ParseMode.HTML,
         reply_markup=panel_markup(STATE),
     )
@@ -1695,14 +1694,14 @@ async def on_panel(update: Update, context: CallbackContext):
         await query.answer("Updated")
         try:
             await query.edit_message_text(
-                panel_header(STATE),
+                panel_header(STATE, pad=40),
                 parse_mode=ParseMode.HTML,
                 reply_markup=panel_markup(STATE),
             )
         except BadRequest:
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
-                text=panel_header(STATE),
+                text=panel_header(STATE, pad=40),
                 parse_mode=ParseMode.HTML,
                 reply_markup=panel_markup(STATE),
             )
