@@ -13,17 +13,41 @@ Mock Telegram Chatbot for the Viral (2022) Call of Cthulhu Campaign
 5. Control the Bot via the interface or `/` commands (run `/help` for a list). 
 6. Chats and Donation are simulated based on a mood and location and pulled from the respective files in data. Press `Resume` for the bot to start the chat simulation.
 
+## Controls
+The chatbot can be controled by the admint (set by admin_id) in a private chat. The control panel is generated based on the provided moods and locations. 
+```
+[ Mood Block ] // select current mood (1 required)
+[ Location Block] // select current location (1 required)
+[ Pause / Resume ]  // pause / resume the chatbot (starts in pause)
+[ Send Maya ]    // type message that is sent in the maya channel
+[ Send Special ]    // type message that is sent as the 'special user' in the chat
+[ Send donation ]    // type name, then type amount sent as donation with random text
+[ Burst Subs ]    // type number (can be negative) that is added to the subscriber count
+[ Burst Viewers ]    // type number (can be negative) that is added to the viewer count
+[ Spam ]    // type message that is spammed in varied forms in the chat for 20 ticks
+[ Reload Config ] // Reloads configs
+[ Init Leaderboard ] // Starts a new leaderboard in the respective channel
+[ Refresh Board ] // Manually refresh leaderboard (automativally once per minute)
+[ Hype - ] Slows all chats and donations by 20%
+[ Hype + ] Speeds up all chats and donations by 20% (up to 500%)
+```
+
 ## Config
 ### Moods
 Every mood can be configured individually in `data/mood_config.json`. To add you custom mood, add it in the config and 
 ```jsonc
+"good": { // name of the mood
+  "mood_interval": 0.8, // interval multiplicator for sending chats / donations
+  "donation_range": [5.0, 50.0], // range of donation amount. Weighted towards the lower value
+  "audience_trend": 1 // trend if audience increases or decreased. Set to -1 if you want the mood to decrease audience
+},
 ```
 
 ### Locations
 Every location can be configured individually in `data/location_scripts.json`.
 ```jsonc
 "stream_start": { // location name
-    "chat_lines": [ // guaranteed chats from random users in the chat channel
+    "audience_hooks": [ // guaranteed chats from random users in the chat channel
       "Lets gooooo!",
       "FIRST"
     ],
